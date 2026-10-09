@@ -48,86 +48,8 @@
     <!-- Three.js CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
-    <style>
-      * {
-        touch-action: none;
-        -webkit-touch-callout: none;
-        -webkit-user-select: none;
-        user-select: none;
-        -webkit-tap-highlight-color: transparent;
-      }
-      body {
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-        width: 100vw;
-        height: 100vh;
-        background-color: #0b0f19;
-        transition: background-color 2s ease;
-      }
-
-      /* Killcam Overlay */
-      #screen-killcam {
-        z-index: 100;
-        backdrop-filter: blur(5px);
-        background-color: rgba(0, 0, 0, 0.6);
-      }
-      .killcam-text {
-        font-family: 'Courier New', Courier, monospace;
-        letter-spacing: 0.2em;
-        text-shadow: 0 0 10px #ff0000;
-      }
-      #canvas-container {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 1;
-      }
-      /* Tactical Feedback Animations */
-      @keyframes pulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-      }
-      .animate-pulse-fast { animation: pulse 0.3s ease-out; }
-
-      /* Screen Flash Vignette for Damage */
-      #damage-vignette {
-        pointer-events: none;
-        position: absolute;
-        inset: 0;
-        z-index: 25;
-        opacity: 0;
-        transition: opacity 0.12s ease-out;
-        background: radial-gradient(circle, transparent 50%, rgba(220, 38, 38, 0.6) 100%);
-      }
-      /* Low HP heartbeat pulse */
-      @keyframes lowHpPulse {
-        0%, 100% { box-shadow: inset 0 0 15px rgba(239, 68, 68, 0.3); }
-        50% { box-shadow: inset 0 0 35px rgba(239, 68, 68, 0.75); }
-      }
-      .low-hp-glow {
-        animation: lowHpPulse 0.9s infinite ease-in-out;
-      }
-      /* Floating Damage Popups */
-      .damage-popup {
-        position: absolute;
-        pointer-events: none;
-        font-family: 'Chakra Petch', sans-serif;
-        font-weight: 700;
-        font-size: 14px;
-        color: #fbbf24;
-        text-shadow: 0 0 4px rgba(0, 0, 0, 0.8), 0 0 8px rgba(245, 158, 11, 0.6);
-        animation: floatUp 0.6s forwards ease-out;
-        z-index: 24;
-      }
-      @keyframes floatUp {
-        0% { transform: translate(-50%, -50%) scale(0.8); opacity: 1; }
-        50% { transform: translate(-50%, -80%) scale(1.2); opacity: 1; }
-        100% { transform: translate(-50%, -120%) scale(1); opacity: 0; }
-      }
-    </style>
-  </head>
+    <style>*{touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}body{background-color:#0b0f19;width:100vw;height:100vh;margin:0;padding:0;transition:background-color 2s;overflow:hidden}#screen-killcam{z-index:100;-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);background-color:#0009}.killcam-text{letter-spacing:.2em;text-shadow:0 0 10px red;font-family:Courier New,Courier,monospace}#canvas-container{z-index:1;width:100%;height:100%;position:absolute;inset:0}@keyframes pulse{0%,to{transform:scale(1)}50%{transform:scale(1.05)}}.animate-pulse-fast{animation:.3s ease-out pulse}#damage-vignette{pointer-events:none;z-index:25;opacity:0;background:radial-gradient(circle,#0000 50%,#dc262699 100%);transition:opacity .12s ease-out;position:absolute;inset:0}@keyframes lowHpPulse{0%,to{box-shadow:inset 0 0 15px #ef44444d}50%{box-shadow:inset 0 0 35px #ef4444bf}}.low-hp-glow{animation:.9s ease-in-out infinite lowHpPulse}.damage-popup{pointer-events:none;color:#fbbf24;text-shadow:0 0 4px #000c,0 0 8px #f59e0b99;z-index:24;font-family:Chakra Petch,sans-serif;font-size:14px;font-weight:700;animation:.6s ease-out forwards floatUp;position:absolute}@keyframes floatUp{0%{opacity:1;transform:translate(-50%,-50%)scale(.8)}50%{opacity:1;transform:translate(-50%,-80%)scale(1.2)}to{opacity:0;transform:translate(-50%,-120%)scale(1)}}</style>
+  <link rel="manifest" href="/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/registerSW.js"></script></head>
   <body class="h-full bg-black text-white font-sans overflow-hidden select-none">
 
     <!-- 3D WebGL Canvas Layer -->
@@ -1402,6 +1324,9 @@
       const MAX_BULLETS = 64;
       const bullets = [];
       const bulletPool = [];
+
+      // Non-combatants
+      const nonCombatants = [];
 
       const bulletGeo = new THREE.SphereGeometry(0.12, 6, 6);
 
@@ -2942,6 +2867,11 @@
         killStreak++;
         const earned = enemy.scoreVal * scoreMultiplier;
         score += earned;
+        
+        // Hook for missions
+        import('data:video/mp2t;base64,aW1wb3J0IHtkb2MsIGdldERvYywgc2V0RG9jLCB1cGRhdGVEb2MsIGluY3JlbWVudH0gZnJvbSAnZmlyZWJhc2UvZmlyZXN0b3JlJzsKaW1wb3J0IHtkYn0gZnJvbSAnLi4vZmlyZWJhc2UnOwoKY29uc3QgVVNFUl9JRCA9ICJndWVzdF91c2VyIjsgCgpleHBvcnQgY29uc3QgZ2V0VXNlclByb2ZpbGUgPSBhc3luYyAoKSA9PiB7CiAgY29uc3QgdXNlclJlZiA9IGRvYyhkYiwgJ3VzZXJzJywgVVNFUl9JRCk7CiAgY29uc3QgZG9jU25hcCA9IGF3YWl0IGdldERvYyh1c2VyUmVmKTsKICBpZiAoZG9jU25hcC5leGlzdHMoKSkgewogICAgcmV0dXJuIGRvY1NuYXAuZGF0YSgpOwogIH0gZWxzZSB7CiAgICAvLyBJbml0aWFsaXplIHByb2ZpbGUgaWYgaXQgZG9lc24ndCBleGlzdAogICAgY29uc3QgZGVmYXVsdFByb2ZpbGUgPSB7CiAgICAgIHVzZXJuYW1lOiAiUGxheWVyT25lIiwKICAgICAgY3VycmVuY3k6IDAsCiAgICAgIGhpZ2hTY29yZTogMCwKICAgICAgaGlnaFdhdmU6IDEKICAgIH07CiAgICBhd2FpdCBzZXREb2ModXNlclJlZiwgZGVmYXVsdFByb2ZpbGUpOwogICAgcmV0dXJuIGRlZmF1bHRQcm9maWxlOwogIH0KfTsKCmV4cG9ydCBjb25zdCB1cGRhdGVDdXJyZW5jeSA9IGFzeW5jIChhbW91bnQ6IG51bWJlcikgPT4gewogIGNvbnN0IHVzZXJSZWYgPSBkb2MoZGIsICd1c2VycycsIFVTRVJfSUQpOwogIGF3YWl0IHVwZGF0ZURvYyh1c2VyUmVmLCB7CiAgICBjdXJyZW5jeTogaW5jcmVtZW50KGFtb3VudCkKICB9KTsKfTsKCmV4cG9ydCBjb25zdCB1cGRhdGVNaXNzaW9uUHJvZ3Jlc3MgPSBhc3luYyAobWlzc2lvbklkOiBzdHJpbmcsIHByb2dyZXNzSW5jcmVtZW50OiBudW1iZXIpID0+IHsKICBjb25zdCBtaXNzaW9uUmVmID0gZG9jKGRiLCAndXNlcnMnLCBVU0VSX0lELCAnbWlzc2lvbnMnLCBtaXNzaW9uSWQpOwogIGF3YWl0IHVwZGF0ZURvYyhtaXNzaW9uUmVmLCB7CiAgICBjdXJyZW50OiBpbmNyZW1lbnQocHJvZ3Jlc3NJbmNyZW1lbnQpCiAgfSk7Cn07CgpleHBvcnQgY29uc3Qgc2VlZE1pc3Npb25zID0gYXN5bmMgKCkgPT4gewogICAgY29uc3QgbWlzc2lvbnMgPSBbCiAgICAgICAgeyBpZDogJ2tpbGxfNTBfYm90cycsIGRlc2NyaXB0aW9uOiAnRWxpbWluYXRlIDUwIGJvdHMnLCB0YXJnZXQ6IDUwLCBjdXJyZW50OiAwLCByZXdhcmQ6ICdUYWN0aWNhbCBDYW1vJyB9LAogICAgICAgIHsgaWQ6ICdzdXJ2aXZlXzEwX3dhdmVzJywgZGVzY3JpcHRpb246ICdTdXJ2aXZlIDEwIHdhdmVzJywgdGFyZ2V0OiAxMCwgY3VycmVudDogMCwgcmV3YXJkOiAnR29sZGVuIFJpZmxlIFNraW4nIH0KICAgIF07CiAgICAKICAgIGZvciAoY29uc3QgbWlzc2lvbiBvZiBtaXNzaW9ucykgewogICAgICAgIGNvbnN0IG1pc3Npb25SZWYgPSBkb2MoZGIsICd1c2VycycsIFVTRVJfSUQsICdtaXNzaW9ucycsIG1pc3Npb24uaWQpOwogICAgICAgIGF3YWl0IHNldERvYyhtaXNzaW9uUmVmLCBtaXNzaW9uLCB7bWVyZ2U6IHRydWV9KTsKICAgIH0KfTsK').then(({updateMissionProgress}) => {
+            updateMissionProgress('kill_50_bots', 1);
+        });
 
         if (killStreak === 5) {
           scoreMultiplier = 2;
@@ -3154,6 +3084,22 @@
           rotSpeedX: (Math.random() - 0.5) * 6,
           rotSpeedZ: (Math.random() - 0.5) * 6
         });
+      }
+
+      function createNonCombatant(x, z) {
+        const body = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.8, 0.5), new THREE.MeshLambertMaterial({color: 0x0000ff}));
+        body.position.set(x, 0.9, z);
+        scene.add(body);
+        nonCombatants.push({ mesh: body, x, z, angle: Math.random() * Math.PI * 2, speed: 2.0 });
+      }
+
+      function updateNonCombatants(delta) {
+        for (const nc of nonCombatants) {
+            nc.angle += (Math.random() - 0.5) * 0.1;
+            nc.x += Math.sin(nc.angle) * nc.speed * delta;
+            nc.z += Math.cos(nc.angle) * nc.speed * delta;
+            nc.mesh.position.set(nc.x, 0.9, nc.z);
+        }
       }
 
       function updateDeadBodies(delta) {
